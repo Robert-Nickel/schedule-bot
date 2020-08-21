@@ -1,37 +1,35 @@
-'use strict';
+"use strict";
 
-const botBuilder = require('claudia-bot-builder');
+const botBuilder = require("claudia-bot-builder");
+const AWS = require("aws-sdk");
 
-class Subject {
+module.exports = botBuilder(function (message) {
+  const documentClient = new AWS.DynamoDB.DocumentClient({
+    region: "eu-central-1",
+  });
 
-  constructor(name, teacher) {
-    this.name = name;
-    this.teacher = teacher;
+  if (message.text == "/subjects") {
+    var params = {
+      TableName: "Users",
+      Key: {
+        id: message.sender + "",
+      },
+    };
+    return documentClient
+      .get(params)
+      .promise()
+      .then(function (data) {
+        var subjects = [];
+        data.Item.subjects.forEach((subject) => {
+          subjects.push(subject.name + " bei " + subject.teacher);
+        });
+        return subjects;
+      })
+      .catch(function (err) {
+        console.log(err);
+        return "That didn‘t work :(";
+      });
+  } else {
+    return "Unknown command, sorry.";
   }
-
-  toString() {
-    return "Du hast: " + this.name + " bei: " + this.teacher;
-  }
-}
-
-
-module.exports = botBuilder(function (request) {
-  const music = new Subject("Musik", "Behrens");
-  const social_studies = new Subject("Sozialwissenschaften", "Feldkämper");
-  const sports = new Subject("Sport", "Kayser");
-  const physics = new Subject("Physik", "Recker");
-  //const computer_sciences = new Subject("Informatik", "Schmolke");
-  //const mathematics = new Subject("Mathematik", "Gärtner");
-  //const english = new Subject("Englisch", "Casper");
-  //const religion = new Subject("Religion", "Taube");
-  //const history = new Subject("Geschichte", "Taube");
-  //const german = new Subject("Deutsch", "Konert");
-  const monday = [music.toString];
-
-  if (request.text == "/monday") {
-    return "wenigstens etwas funktioniert";
-  }
-  return `Thank you for sending ${request.text}. Your message is very important to us.`
 });
-
-//, music.toString, social_studies.toString, social_studies,toString, sports.toString, physics.toString
