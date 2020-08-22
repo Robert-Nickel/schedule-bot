@@ -19,7 +19,11 @@ module.exports = botBuilder(function (message) {
         const userData = data.Item
         const text = message.text
 
-        if (userData.state == "addingSubject") {
+        if (text == "/help" || text == "/start") {
+          return "I will help you managing your schedule.\nCreate a /newSubject and see the list of all /subjects."
+        }
+
+        else if (userData.state == "addingSubject") {
           userData.subjects.push(text)
           userData.state = "neutral"
           return saveUserData(userData)
@@ -33,7 +37,7 @@ module.exports = botBuilder(function (message) {
         }
 
         else if (text == "/subjects") {
-          if(userData.subjects.length == 0) {
+          if (userData.subjects.length == 0) {
             return "You have no subjects created yet. Use /newSubject to create one."
           }
           return userData.subjects;
