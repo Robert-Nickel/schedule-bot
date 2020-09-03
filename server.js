@@ -7,6 +7,29 @@ module.exports = botBuilder(function (message) {
   const documentClient = new AWS.DynamoDB.DocumentClient({
     region: "eu-central-1",
   });
+  if (message.text == "/start") {
+    return documentClient
+      .put({
+        TableName: "Users",
+        Item: {
+          id: message.sender + "",
+          state: "neutral",
+          subjects: [],
+          schedule: {
+            Monday: [],
+            Tuesday: [],
+            Wednesday: [],
+            Thursday: [],
+            Friday: [],
+            Saturday: [],
+          },
+        },
+      })
+      .promise()
+      .then(function () {
+        return "Welcome, I am a schedule bot. To show you my features, select /help.";
+      });
+  }
   return documentClient
     .get({
       TableName: "Users",
@@ -20,13 +43,16 @@ module.exports = botBuilder(function (message) {
       const text = message.text;
 
       if (text == "/help" || text == "/start") {
-        return "I will help you managing your schedule.\nCreate a /newSubject and see the list of all /subjects.";
+        return (
+          "I will help you managing your schedule.\nCreate a /newSubject and see the list of all /subjects." +
+          "\nAfter having all your subjects defined, /config your schedule."
+        );
       } else if (userData.state == "addingSubject") {
         userData.subjects.push(text);
         userData.state = "neutral";
         return saveUserData(userData).then(() => {
           return (
-            "Added subject " + text + ". Use /subjects to see all subjects."
+            "Added subject " + text + ". Use /newSubject to create another one and /subjects to list all subjects."
           );
         });
       } else if (text == "/newSubject") {
@@ -39,6 +65,21 @@ module.exports = botBuilder(function (message) {
           return "You have no subjects created yet. Use /newSubject to create one.";
         }
         return userData.subjects;
+      } else if (text == "/schedule") {
+        return (
+          "Monday:\n" +
+          userData.schedule.Monday +
+          "\n\nTuesday:\n" +
+          userData.schedule.Tuesday +
+          "\n\nWednesday:\n" +
+          userData.schedule.Wednesday +
+          "\n\nThursday:\n" +
+          userData.schedule.Thursday +
+          "\n\nFriday:\n" +
+          userData.schedule.Friday +
+          "\n\nSaturday:\n" +
+          userData.schedule.Saturday
+        );
       } else if (userData.state == "config") {
         const weekdays = [
           "Monday",
@@ -51,10 +92,12 @@ module.exports = botBuilder(function (message) {
         if (!userData.configCurrentWeekday) {
           if (weekdays.includes(text)) {
             userData.configCurrentWeekday = text;
+            userData.schedule[text] = [];
             return saveUserData(userData).then(() => {
               return {
                 chat_id: message.originalRequest.message.chat.id + "",
-                text: "Enter your subjects on " + text + " in the right order.",
+                text:
+                  "Select your subjects on " + text + " in the right order.",
                 reply_markup: {
                   keyboard: buildSubjectsKeyboard(userData),
                   resize_keyboard: true,
@@ -70,7 +113,8 @@ module.exports = botBuilder(function (message) {
             return saveUserData(userData).then(() => {
               return {
                 chat_id: message.originalRequest.message.chat.id + "",
-                text: "Enter your next subject.",
+                text:
+                  'What is your next subject? Select "That\'s it" when you are done.',
                 reply_markup: {
                   keyboard: buildSubjectsKeyboard(userData),
                   resize_keyboard: true,
@@ -82,16 +126,22 @@ module.exports = botBuilder(function (message) {
             var configCurrentWeekdayHolder = userData.configCurrentWeekday;
             delete userData.configCurrentWeekday;
             return saveUserData(userData).then(() => {
+              let configuredSubjects = "";
+              userData.schedule[configCurrentWeekdayHolder].forEach(
+                (subject) => {
+                  configuredSubjects += subject + "\n";
+                }
+              );
               return {
                 chat_id: message.originalRequest.message.chat.id + "",
                 text:
                   "You configured " +
                   configCurrentWeekdayHolder +
-                  " to contain: " +
-                  userData.schedule[configCurrentWeekdayHolder] +
-                  ". You can configure another day now.",
+                  "\n" +
+                  configuredSubjects +
+                  "\nYou can /config another day now or have a look at your /schedule.",
                 reply_markup: {
-                  hide_keyboard: true
+                  hide_keyboard: true,
                 },
               };
             });
@@ -99,7 +149,7 @@ module.exports = botBuilder(function (message) {
             return {
               chat_id: message.originalRequest.message.chat.id + "",
               text:
-                "That is an unknown subject. Please enter one of the following, or select That's it",
+                'That is an unknown subject. Please select one of the following, or select "That\'s it"',
               reply_markup: {
                 keyboard: buildSubjectsKeyboard(userData),
                 resize_keyboard: true,
@@ -108,6 +158,9 @@ module.exports = botBuilder(function (message) {
           }
         }
       } else if (text == "/config") {
+        if (userData.subjects.length < 1) {
+          return "You need to create your subjects first. Use /newSubject to create one.";
+        }
         userData.state = "config";
         userData.configCurrentWeekday = null;
         return saveUserData(userData).then(() => {
@@ -118,9 +171,6 @@ module.exports = botBuilder(function (message) {
       } else {
         return "Unknown command: " + text;
       }
-    })
-    .catch(function (err) {
-      // TODO: If the user doesn't exist yet, create and persist a new one with the given id
     });
 
   function saveUserData(userData) {
@@ -154,8 +204,6 @@ module.exports = botBuilder(function (message) {
 });
 
 // TODOs:
-// Show the user his schedule, e.g. when he sends /schedule
-// If the user doesn't exist yet, create and persist a new one with the given id
 // Reset a day
-// After configuring a day, propose to configure the next day
+// After configuring a day, propose to configure the next day (therefore some shortcuts like /configMonday, /configTuesday etc.)
 // Delete subject
