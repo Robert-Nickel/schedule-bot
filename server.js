@@ -39,19 +39,83 @@ module.exports = botBuilder(function (message) {
           return "You have no subjects created yet. Use /newSubject to create one.";
         }
         return userData.subjects;
-      } else if (text == "/setMonday") {
-        // TODO: Save "settingWeekday" as state, and persist monday as the currentWeekday and 1 as the currentTimeslot
-        return {
-          chat_id: message.originalRequest.message.chat.id + "",
-          text: "What is the first subject you have on monday?",
-          reply_markup: {
-            keyboard: buildSubjectsKeyboard(userData),
-            resize_keyboard: true,
-          },
-        };
-      }
-      // TODO: if the state is "settingWeekday", the input should be saved somewhere and the stateCurrentTimeslot should be updated (by +1)
-      else {
+      } else if (userData.state == "config") {
+        const weekdays = [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
+        if (!userData.configCurrentWeekday) {
+          if (weekdays.includes(text)) {
+            userData.configCurrentWeekday = text;
+            return saveUserData(userData).then(() => {
+              return {
+                chat_id: message.originalRequest.message.chat.id + "",
+                text: "Enter your subjects on " + text + " in the right order.",
+                reply_markup: {
+                  keyboard: buildSubjectsKeyboard(userData),
+                  resize_keyboard: true,
+                },
+              };
+            });
+          } else {
+            return whichWeekdayConfig();
+          }
+        } else if (weekdays.includes(userData.configCurrentWeekday)) {
+          if (userData.subjects.includes(text)) {
+            userData.schedule[userData.configCurrentWeekday].push(text);
+            return saveUserData(userData).then(() => {
+              return {
+                chat_id: message.originalRequest.message.chat.id + "",
+                text: "Enter your next subject.",
+                reply_markup: {
+                  keyboard: buildSubjectsKeyboard(userData),
+                  resize_keyboard: true,
+                },
+              };
+            });
+          } else if (text == "That's it") {
+            userData.state = "neutral";
+            var configCurrentWeekdayHolder = userData.configCurrentWeekday;
+            delete userData.configCurrentWeekday;
+            return saveUserData(userData).then(() => {
+              return {
+                chat_id: message.originalRequest.message.chat.id + "",
+                text:
+                  "You configured " +
+                  configCurrentWeekdayHolder +
+                  " to contain: " +
+                  userData.schedule[configCurrentWeekdayHolder] +
+                  ". You can configure another day now.",
+                reply_markup: {
+                  hide_keyboard: true
+                },
+              };
+            });
+          } else {
+            return {
+              chat_id: message.originalRequest.message.chat.id + "",
+              text:
+                "That is an unknown subject. Please enter one of the following, or select That's it",
+              reply_markup: {
+                keyboard: buildSubjectsKeyboard(userData),
+                resize_keyboard: true,
+              },
+            };
+          }
+        }
+      } else if (text == "/config") {
+        userData.state = "config";
+        userData.configCurrentWeekday = null;
+        return saveUserData(userData).then(() => {
+          return whichWeekdayConfig();
+        });
+      } else if (text == "/state") {
+        return "Current state: " + userData.state;
+      } else {
         return "Unknown command: " + text;
       }
     })
@@ -72,4 +136,26 @@ module.exports = botBuilder(function (message) {
     }
     return subjectsKeyboard;
   }
+
+  function whichWeekdayConfig() {
+    return {
+      chat_id: message.originalRequest.message.chat.id + "",
+      text: "Which weekday do you want to configure?",
+      reply_markup: {
+        keyboard: [
+          ["Monday", "Tuesday"],
+          ["Wednesday", "Thursday"],
+          ["Friday", "Saturday"],
+        ],
+        resize_keyboard: true,
+      },
+    };
+  }
 });
+
+// TODOs:
+// Show the user his schedule, e.g. when he sends /schedule
+// If the user doesn't exist yet, create and persist a new one with the given id
+// Reset a day
+// After configuring a day, propose to configure the next day
+// Delete subject
