@@ -41,6 +41,14 @@ module.exports = botBuilder(function (message) {
     .then(function (data) {
       const userData = data.Item;
       const text = message.text;
+      const weekdays = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ];
 
       if (text == "/help" || text == "/start") {
         return (
@@ -84,15 +92,13 @@ module.exports = botBuilder(function (message) {
           "\nSaturday:\n" +
           getNewLineSeperatedList(userData.schedule.Saturday)
         );
+      } else if (text == "/reset") {
+        userData.state = "reset";
+        var keyboard = getResetKeyboard("What do you want to reset?");
+        return saveUserData(userData).then(() => {
+          return keyboard;
+        });
       } else if (userData.state == "config") {
-        const weekdays = [
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-        ];
         if (!userData.configCurrentWeekday) {
           if (weekdays.includes(text)) {
             userData.configCurrentWeekday = text;
@@ -109,7 +115,7 @@ module.exports = botBuilder(function (message) {
               };
             });
           } else {
-            return whichWeekdayConfig();
+            return getWeekdayKeyboard();
           }
         } else if (weekdays.includes(userData.configCurrentWeekday)) {
           if (userData.subjects.includes(text)) {
@@ -130,18 +136,15 @@ module.exports = botBuilder(function (message) {
             var configCurrentWeekdayHolder = userData.configCurrentWeekday;
             delete userData.configCurrentWeekday;
             return saveUserData(userData).then(() => {
-              return {
-                chat_id: message.originalRequest.message.chat.id + "",
-                text:
-                  "You configured " +
+              return getHideKeyboard(
+                "You configured " +
                   configCurrentWeekdayHolder +
                   "\n" +
-                  getNewLineSeperatedList(userData.schedule[configCurrentWeekdayHolder]) +
-                  "\nYou can /config another day now or have a look at your /schedule.",
-                reply_markup: {
-                  hide_keyboard: true,
-                },
-              };
+                  getNewLineSeperatedList(
+                    userData.schedule[configCurrentWeekdayHolder]
+                  ) +
+                  "\nYou can /config another day now or have a look at your /schedule."
+              );
             });
           } else {
             return {
@@ -155,6 +158,42 @@ module.exports = botBuilder(function (message) {
             };
           }
         }
+      } else if (userData.state == "reset") {
+        if (text == "Everything") {
+          userData.schedule.Monday = [];
+          userData.schedule.Tuesday = [];
+          userData.schedule.Wednesday = [];
+          userData.schedule.Thursday = [];
+          userData.schedule.Friday = [];
+          userData.schedule.Saturday = [];
+          userData.subjects = [];
+          userData.state = "neutral";
+          return saveUserData(userData).then(() => {
+            return getHideKeyboard(
+              "Everything was reset. Use /newSubject to create a new subject and /config your schedule afterwards."
+            );
+          });
+        } else if (text == "Subjects") {
+          userData.subjects = [];
+          userData.state = "neutral";
+          return saveUserData(userData).then(() => {
+            return getHideKeyboard(
+              "Your subjects have been reset. Use /newSubject to create a new one."
+            );
+          });
+        } else if (weekdays.includes(text)) {
+          userData.schedule[text] = [];
+          userData.state = "neutral";
+          return saveUserData(userData).then(() => {
+            return getHideKeyboard(
+              text + " was reset. Use /config to reconfigure it."
+            );
+          });
+        } else {
+          return getResetKeyboard(
+            "That is nothing I can reset. Please chose one of the buttons below."
+          );
+        }
       } else if (text == "/config") {
         if (userData.subjects.length < 1) {
           return "You need to create your subjects first. Use /newSubject to create one.";
@@ -162,7 +201,7 @@ module.exports = botBuilder(function (message) {
         userData.state = "config";
         userData.configCurrentWeekday = null;
         return saveUserData(userData).then(() => {
-          return whichWeekdayConfig();
+          return getWeekdayKeyboard();
         });
       } else if (text == "/state") {
         return userData.state;
@@ -185,7 +224,7 @@ module.exports = botBuilder(function (message) {
     return subjectsKeyboard;
   }
 
-  function whichWeekdayConfig() {
+  function getWeekdayKeyboard(text) {
     return {
       chat_id: message.originalRequest.message.chat.id + "",
       text: "Which weekday do you want to configure?",
@@ -206,6 +245,23 @@ module.exports = botBuilder(function (message) {
       newList += item + "\n";
     });
     return newList;
+  }
+
+  function getResetKeyboard(text) {
+    var keyboard = getWeekdayKeyboard();
+    keyboard.reply_markup.keyboard.push(["Subjects", "Everything"]);
+    keyboard.text = text;
+    return keyboard;
+  }
+
+  function getHideKeyboard(text) {
+    return {
+      chat_id: message.originalRequest.message.chat.id + "",
+      text: text,
+      reply_markup: {
+        hide_keyboard: true,
+      },
+    };
   }
 });
 
