@@ -44,7 +44,9 @@ module.exports = botBuilder(function (message) {
 
       if (text == "/help" || text == "/start") {
         return (
-          "I will help you managing your schedule.\nCreate a /newSubject and see the list of all /subjects." +
+          "I will help you managing your schedule.\nCreate a /newSubject and enter details like the name of the subject, your teacher and the room." +
+          " Don't enter the time or day you have a subject here, the schedule will help you doing so afterwards." +
+          "\nYou can see the list of all /subjects." +
           "\nAfter having all your subjects defined, /config your schedule."
         );
       } else if (userData.state == "addingSubject") {
@@ -52,7 +54,9 @@ module.exports = botBuilder(function (message) {
         userData.state = "neutral";
         return saveUserData(userData).then(() => {
           return (
-            "Added subject " + text + ". Use /newSubject to create another one and /subjects to list all subjects."
+            "Added subject " +
+            text +
+            ". Use /newSubject to create another one and /subjects to list all subjects. If you created all subjects, /config your schedule."
           );
         });
       } else if (text == "/newSubject") {
@@ -68,17 +72,17 @@ module.exports = botBuilder(function (message) {
       } else if (text == "/schedule") {
         return (
           "Monday:\n" +
-          userData.schedule.Monday +
-          "\n\nTuesday:\n" +
-          userData.schedule.Tuesday +
-          "\n\nWednesday:\n" +
-          userData.schedule.Wednesday +
-          "\n\nThursday:\n" +
-          userData.schedule.Thursday +
-          "\n\nFriday:\n" +
-          userData.schedule.Friday +
-          "\n\nSaturday:\n" +
-          userData.schedule.Saturday
+          getNewLineSeperatedList(userData.schedule.Monday) +
+          "\nTuesday:\n" +
+          getNewLineSeperatedList(userData.schedule.Tuesday) +
+          "\nWednesday:\n" +
+          getNewLineSeperatedList(userData.schedule.Wednesday) +
+          "\nThursday:\n" +
+          getNewLineSeperatedList(userData.schedule.Thursday) +
+          "\nFriday:\n" +
+          getNewLineSeperatedList(userData.schedule.Friday) +
+          "\nSaturday:\n" +
+          getNewLineSeperatedList(userData.schedule.Saturday)
         );
       } else if (userData.state == "config") {
         const weekdays = [
@@ -126,19 +130,13 @@ module.exports = botBuilder(function (message) {
             var configCurrentWeekdayHolder = userData.configCurrentWeekday;
             delete userData.configCurrentWeekday;
             return saveUserData(userData).then(() => {
-              let configuredSubjects = "";
-              userData.schedule[configCurrentWeekdayHolder].forEach(
-                (subject) => {
-                  configuredSubjects += subject + "\n";
-                }
-              );
               return {
                 chat_id: message.originalRequest.message.chat.id + "",
                 text:
                   "You configured " +
                   configCurrentWeekdayHolder +
                   "\n" +
-                  configuredSubjects +
+                  getNewLineSeperatedList(userData.schedule[configCurrentWeekdayHolder]) +
                   "\nYou can /config another day now or have a look at your /schedule.",
                 reply_markup: {
                   hide_keyboard: true,
@@ -167,7 +165,7 @@ module.exports = botBuilder(function (message) {
           return whichWeekdayConfig();
         });
       } else if (text == "/state") {
-        return "Current state: " + userData.state;
+        return userData.state;
       } else {
         return "Unknown command: " + text;
       }
@@ -201,9 +199,21 @@ module.exports = botBuilder(function (message) {
       },
     };
   }
+
+  function getNewLineSeperatedList(list) {
+    var newList = "";
+    list.forEach((item) => {
+      newList += item + "\n";
+    });
+    return newList;
+  }
 });
 
 // TODOs:
 // Reset a day
 // After configuring a day, propose to configure the next day (therefore some shortcuts like /configMonday, /configTuesday etc.)
 // Delete subject
+// Current time related stuff like:
+//    /now -> gives you the current and the next subject
+//    /configTimes -> lets you configure at which time which hours are (e.g. 1st lessons always goes from 8:00 until 8:45)
+//    /today -> gives you all the subjects of today
