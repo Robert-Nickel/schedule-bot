@@ -55,7 +55,8 @@ module.exports = botBuilder(function (message) {
           "I will help you managing your schedule.\nCreate a /newSubject and enter details like the name of the subject, your teacher and the room." +
           " Don't enter the time or day you have a subject here, the schedule will help you doing so afterwards." +
           "\nYou can see the list of all /subjects." +
-          "\nAfter having all your subjects defined, /config your schedule."
+          "\nAfter having all your subjects defined, /config your schedule." + 
+          "\nYou can reset one or all days of your schedule by using /resetSchedule."
         );
       } else if (userData.state == "addingSubject") {
         userData.subjects.push(text);
@@ -92,9 +93,9 @@ module.exports = botBuilder(function (message) {
           "\nSaturday:\n" +
           getNewLineSeperatedList(userData.schedule.Saturday)
         );
-      } else if (text == "/reset") {
-        userData.state = "reset";
-        var keyboard = getResetKeyboard("What do you want to reset?");
+      } else if (text == "/resetSchedule") {
+        userData.state = "resetSchedule";
+        var keyboard = getResetScheduleKeyboard("What do you want to reset?");
         return saveUserData(userData).then(() => {
           return keyboard;
         });
@@ -158,7 +159,7 @@ module.exports = botBuilder(function (message) {
             };
           }
         }
-      } else if (userData.state == "reset") {
+      } else if (userData.state == "resetSchedule") {
         if (text == "Everything") {
           userData.schedule.Monday = [];
           userData.schedule.Tuesday = [];
@@ -166,19 +167,10 @@ module.exports = botBuilder(function (message) {
           userData.schedule.Thursday = [];
           userData.schedule.Friday = [];
           userData.schedule.Saturday = [];
-          userData.subjects = [];
           userData.state = "neutral";
           return saveUserData(userData).then(() => {
             return getHideKeyboard(
               "Everything was reset. Use /newSubject to create a new subject and /config your schedule afterwards."
-            );
-          });
-        } else if (text == "Subjects") {
-          userData.subjects = [];
-          userData.state = "neutral";
-          return saveUserData(userData).then(() => {
-            return getHideKeyboard(
-              "Your subjects have been reset. Use /newSubject to create a new one."
             );
           });
         } else if (weekdays.includes(text)) {
@@ -190,7 +182,7 @@ module.exports = botBuilder(function (message) {
             );
           });
         } else {
-          return getResetKeyboard(
+          return getResetScheduleKeyboard(
             "That is nothing I can reset. Please chose one of the buttons below."
           );
         }
@@ -247,9 +239,9 @@ module.exports = botBuilder(function (message) {
     return newList;
   }
 
-  function getResetKeyboard(text) {
+  function getResetScheduleKeyboard(text) {
     var keyboard = getWeekdayKeyboard();
-    keyboard.reply_markup.keyboard.push(["Subjects", "Everything"]);
+    keyboard.reply_markup.keyboard.push(["Everything"]);
     keyboard.text = text;
     return keyboard;
   }
@@ -266,7 +258,7 @@ module.exports = botBuilder(function (message) {
 });
 
 // TODOs:
-// Reset a day
+// /deleteSubject command that provides a button for each subject and a "Delete all" button.
 // After configuring a day, propose to configure the next day (therefore some shortcuts like /configMonday, /configTuesday etc.)
 // Delete subject
 // Current time related stuff like:
