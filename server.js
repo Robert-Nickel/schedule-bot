@@ -68,7 +68,7 @@ module.exports = botBuilder(function (message) {
             ". Use /newSubject to create another one and /subjects to list all subjects. If you created all subjects, /config your schedule."
           );
         });
-      } else if (text == "/newSubject") {
+      } else if (text == "/newsubject") {
         userData.state = "addingSubject";
         return saveUserData(userData).then(() => {
           return "Which subject do you want to create?\nPro tip: You can also add details like the room or the teacher here.";
@@ -93,7 +93,7 @@ module.exports = botBuilder(function (message) {
           "\nSaturday:\n" +
           getNewLineSeperatedList(userData.schedule.Saturday)
         );
-      } else if (text == "/resetSchedule") {
+      } else if (text == "/resetschedule") {
         userData.state = "resetSchedule";
         var keyboard = getResetScheduleKeyboard("What do you want to reset?");
         return saveUserData(userData).then(() => {
