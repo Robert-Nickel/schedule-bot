@@ -177,7 +177,7 @@ module.exports = botBuilder(function (message) {
         }
       } else if (text == "/deletesubject") {
         if (userData.subjects.length < 1) {
-          return "Create a /newsubject first!"
+          return "Create a /newsubject first!";
         }
         userData.state = "deletingsubject";
         return saveUserData(userData).then(() => {
@@ -192,16 +192,25 @@ module.exports = botBuilder(function (message) {
           userData.state = "neutral";
           userData.subjects.splice(userData.subjects.indexOf(text), 1);
           return saveUserData(userData).then(() => {
-            return getHideKeyboard(text + " deleted. Create a new one with /newsubject, or see all /subjects.")
-          })
+            return getHideKeyboard(
+              text +
+                " deleted. Create a new one with /newsubject, or see all /subjects."
+            );
+          });
         } else if (text == "All of them!") {
           userData.state = "neutral";
           userData.subjects = [];
           return saveUserData(userData).then(() => {
-            return getHideKeyboard("All subjects deleted. Create a new one with /newsubject, or see all /subjects.")
-          })
+            return getHideKeyboard(
+              "All subjects deleted. Create a new one with /newsubject, or see all /subjects."
+            );
+          });
         } else {
-          return getSubjectsKeyboard(userData, "That subject doesn't exist, so which subject would you like to delete?", "All of them!")
+          return getSubjectsKeyboard(
+            userData,
+            "That subject doesn't exist, so which subject would you like to delete?",
+            "All of them!"
+          );
         }
       } else if (text == "/config") {
         if (userData.subjects.length < 1) {
@@ -214,6 +223,22 @@ module.exports = botBuilder(function (message) {
         });
       } else if (text == "/state") {
         return userData.state;
+      } else if (text == "/today") {
+        var date = new Date();
+        var weekday = new Array(7);
+        weekday[0] = "Sunday";
+        weekday[1] = "Monday";
+        weekday[2] = "Tuesday";
+        weekday[3] = "Wednesday";
+        weekday[4] = "Thursday";
+        weekday[5] = "Friday";
+        weekday[6] = "Saturday";
+        var today = weekday[date.getDay()]
+        if (today == "Sunday") {
+          return "Good news: It's sunday, no school today. Prepare the next week and have a look at your /schedule."
+        } else { 
+          return userData.schedule[today]
+        }
       } else {
         return "Unknown command: " + text;
       }
