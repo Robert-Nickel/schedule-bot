@@ -8,6 +8,16 @@ module.exports = botBuilder(function (message) {
     region: "eu-central-1",
   });
   const id = message.originalRequest.message.chat.id + "";
+  const weekdays = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
   if (message.text == "/start") {
     return documentClient
       .put({
@@ -42,22 +52,16 @@ module.exports = botBuilder(function (message) {
     .then(function (data) {
       const userData = data.Item;
       const text = message.text;
-      const weekdays = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
 
       if (text == "/help" || text == "/start") {
         return (
-          "I will help you managing your schedule.\nCreate a /newsubject and enter details like the name of the subject, your teacher and the room." +
-          " Don't enter the time or day you have a subject here, the schedule will help you doing so afterwards." +
-          "\nYou can see the list of all /subjects." +
-          "\nAfter having all your subjects defined, /config your schedule." +
-          "\nYou can reset one or all days of your schedule by using /resetschedule."
+          "I will help you managing your schedule." +
+          "\n\nCreate a /newsubject and enter details like the name of the subject, your teacher and the room." +
+          " Don't enter the time or day here, the schedule will help you doing so afterwards." +
+          "\nYou can see the list of all /subjects and delete one or all with /deletesubject." +
+          "\n\nAfter having all your subjects defined, /config your schedule." +
+          "\nYou can reset one or all days with /resetschedule." +
+          "\n\nDisplay your full /schedule, or use /today or /tomorrow to be more specific."
         );
       } else if (userData.state == "addingSubject") {
         userData.subjects.push(text);
@@ -102,7 +106,7 @@ module.exports = botBuilder(function (message) {
         });
       } else if (userData.state == "config") {
         if (!userData.configCurrentWeekday) {
-          if (weekdays.includes(text)) {
+          if (isScheduledWeekday(text)) {
             userData.configCurrentWeekday = text;
             userData.schedule[text] = [];
             return saveUserData(userData).then(() => {
@@ -115,7 +119,7 @@ module.exports = botBuilder(function (message) {
           } else {
             return getWeekdayKeyboard();
           }
-        } else if (weekdays.includes(userData.configCurrentWeekday)) {
+        } else if (isScheduledWeekday(userData.configCurrentWeekday)) {
           if (userData.subjects.includes(text)) {
             userData.schedule[userData.configCurrentWeekday].push(text);
             return saveUserData(userData).then(() => {
@@ -162,7 +166,7 @@ module.exports = botBuilder(function (message) {
               "Everything was reset. Use /newsubject to create a new subject and /config your schedule afterwards."
             );
           });
-        } else if (weekdays.includes(text)) {
+        } else if (isScheduledWeekday(text)) {
           userData.schedule[text] = [];
           userData.state = "neutral";
           return saveUserData(userData).then(() => {
@@ -225,19 +229,23 @@ module.exports = botBuilder(function (message) {
         return userData.state;
       } else if (text == "/today") {
         var date = new Date();
-        var weekday = new Array(7);
-        weekday[0] = "Sunday";
-        weekday[1] = "Monday";
-        weekday[2] = "Tuesday";
-        weekday[3] = "Wednesday";
-        weekday[4] = "Thursday";
-        weekday[5] = "Friday";
-        weekday[6] = "Saturday";
-        var today = weekday[date.getDay()]
-        if (today == "Sunday") {
-          return "Good news: It's sunday, no school today. Prepare the next week and have a look at your /schedule."
-        } else { 
-          return userData.schedule[today]
+        var today = date.getDay();
+        if (today == 0) {
+          return [
+            "Good news: It's sunday, but this is the schedule for tomorrow:",
+          ].concat(userData.schedule[weekdays[1]]);
+        } else {
+          return userData.schedule[weekdays[today]];
+        }
+      } else if (text == "/tomorrow") {
+        var date = new Date();
+        var tomorrow = (date.getDay() + 1) % 6;
+        if (tomorrow == 0) {
+          return [
+            "No school tomorrow, but this is your schedule on monday:",
+          ].concat(userData.schedule[weekdays[1]]);
+        } else {
+          return userData.schedule[weekdays[tomorrow]];
         }
       } else {
         return "Unknown command: " + text;
@@ -303,6 +311,10 @@ module.exports = botBuilder(function (message) {
         hide_keyboard: true,
       },
     };
+  }
+
+  function isScheduledWeekday(text) {
+    return weekdays.includes(text) && text != "Sunday";
   }
 });
 
