@@ -34,6 +34,7 @@ module.exports = botBuilder(function (message) {
             Friday: [],
             Saturday: [],
           },
+          timeslots: [],
         },
       })
       .promise()
@@ -53,17 +54,7 @@ module.exports = botBuilder(function (message) {
       const userData = data.Item;
       const text = message.text;
 
-      if (text == "/help" || text == "/start") {
-        return (
-          "I will help you managing your schedule." +
-          "\n\nCreate a /newsubject and enter details like the name of the subject, your teacher and the room." +
-          " Don't enter the time or day here, the schedule will help you doing so afterwards." +
-          "\nYou can see the list of all /subjects and delete one or all with /deletesubject." +
-          "\n\nAfter having all your subjects defined, /config your schedule." +
-          "\nYou can reset one or all days with /resetschedule." +
-          "\n\nDisplay your full /schedule, or use /today or /tomorrow to be more specific."
-        );
-      } else if (userData.state == "addingSubject") {
+      if (userData.state == "addingSubject") {
         userData.subjects.push(text);
         userData.state = "neutral";
         return saveUserData(userData).then(() => {
@@ -72,37 +63,6 @@ module.exports = botBuilder(function (message) {
             text +
             " to /subjects. Use /newsubject to create another one. After creating all subjects, /config your schedule."
           );
-        });
-      } else if (text == "/newsubject") {
-        userData.state = "addingSubject";
-        return saveUserData(userData).then(() => {
-          return "Which subject do you want to create?\nAdd details like the room or the teacher here, but not the time or day.";
-        });
-      } else if (text == "/subjects") {
-        if (userData.subjects.length == 0) {
-          return "You have no subjects created yet. Use /newsubject to create one.";
-        }
-        return userData.subjects;
-      } else if (text == "/schedule") {
-        return (
-          "Monday:\n" +
-          getNewLineSeperatedList(userData.schedule.Monday) +
-          "\nTuesday:\n" +
-          getNewLineSeperatedList(userData.schedule.Tuesday) +
-          "\nWednesday:\n" +
-          getNewLineSeperatedList(userData.schedule.Wednesday) +
-          "\nThursday:\n" +
-          getNewLineSeperatedList(userData.schedule.Thursday) +
-          "\nFriday:\n" +
-          getNewLineSeperatedList(userData.schedule.Friday) +
-          "\nSaturday:\n" +
-          getNewLineSeperatedList(userData.schedule.Saturday)
-        );
-      } else if (text == "/resetschedule") {
-        userData.state = "resetschedule";
-        var keyboard = getResetScheduleKeyboard("What do you want to reset?");
-        return saveUserData(userData).then(() => {
-          return keyboard;
         });
       } else if (userData.state == "config") {
         if (!userData.configCurrentWeekday) {
@@ -152,7 +112,7 @@ module.exports = botBuilder(function (message) {
             );
           }
         }
-      } else if (userData.state == "resetschedule") {
+      } else if (userData.state == "resettingschedule") {
         if (text == "Everything") {
           userData.schedule.Monday = [];
           userData.schedule.Tuesday = [];
@@ -179,18 +139,6 @@ module.exports = botBuilder(function (message) {
             "That is nothing I can reset. Please chose one of the buttons below."
           );
         }
-      } else if (text == "/deletesubject") {
-        if (userData.subjects.length < 1) {
-          return "Create a /newsubject first!";
-        }
-        userData.state = "deletingsubject";
-        return saveUserData(userData).then(() => {
-          return getSubjectsKeyboard(
-            userData,
-            "Which subject do you want to delete?",
-            "All of them!"
-          );
-        });
       } else if (userData.state == "deletingsubject") {
         if (userData.subjects.includes(text)) {
           userData.state = "neutral";
@@ -216,6 +164,39 @@ module.exports = botBuilder(function (message) {
             "All of them!"
           );
         }
+      } else if (text == "/help" || text == "/start") {
+        return (
+          "I will help you managing your schedule." +
+          "\n\nCreate a /newsubject and enter details like the name of the subject, your teacher and the room." +
+          " Don't enter the time or day here, the schedule will help you doing so afterwards." +
+          "\nYou can see the list of all /subjects and delete one or all with /deletesubject." +
+          "\n\nAfter having all your subjects defined, /config your schedule." +
+          "\nYou can reset one or all days with /resetschedule." +
+          "\n\nDisplay your full /schedule, or use /today or /tomorrow to be more specific." + 
+          "\n\nYou can define the time your lessons start and end with /settimeslots and display all /timeslots."
+        );
+      } else if (text == "/newsubject") {
+        userData.state = "addingSubject";
+        return saveUserData(userData).then(() => {
+          return "Which subject do you want to create?\nAdd details like the room or the teacher here, but not the time or day.";
+        });
+      } else if (text == "/subjects") {
+        if (userData.subjects.length == 0) {
+          return "You have no subjects created yet. Use /newsubject to create one.";
+        }
+        return userData.subjects;
+      } else if (text == "/deletesubject") {
+        if (userData.subjects.length < 1) {
+          return "Create a /newsubject first!";
+        }
+        userData.state = "deletingsubject";
+        return saveUserData(userData).then(() => {
+          return getSubjectsKeyboard(
+            userData,
+            "Which subject do you want to delete?",
+            "All of them!"
+          );
+        });
       } else if (text == "/config") {
         if (userData.subjects.length < 1) {
           return "You need to create your subjects first. Use /newsubject to create one.";
@@ -225,17 +206,40 @@ module.exports = botBuilder(function (message) {
         return saveUserData(userData).then(() => {
           return getWeekdayKeyboard();
         });
-      } else if (text == "/state") {
-        return userData.state;
+      } else if (text == "/schedule") {
+        return (
+          "Monday:\n" +
+          getNewLineSeperatedList(userData.schedule.Monday) +
+          "\nTuesday:\n" +
+          getNewLineSeperatedList(userData.schedule.Tuesday) +
+          "\nWednesday:\n" +
+          getNewLineSeperatedList(userData.schedule.Wednesday) +
+          "\nThursday:\n" +
+          getNewLineSeperatedList(userData.schedule.Thursday) +
+          "\nFriday:\n" +
+          getNewLineSeperatedList(userData.schedule.Friday) +
+          "\nSaturday:\n" +
+          getNewLineSeperatedList(userData.schedule.Saturday)
+        );
       } else if (text == "/today") {
         var date = new Date();
         var today = date.getDay();
         if (today == 0) {
           return [
             "Good news: It's sunday, but this is the schedule for tomorrow:",
-          ].concat(userData.schedule[weekdays[1]]);
+          ].concat(
+            getScheduleWithTimeslots(
+              userData.schedule[weekdays[1]],
+              userData.timeslots
+            )
+          );
+        } else if (userData.schedule[weekdays[today]].length < 1) {
+          return "You haven‘t defined anything for today. You can use /config to do so.";
         } else {
-          return userData.schedule[weekdays[today]];
+          return getScheduleWithTimeslots(
+            userData.schedule[weekdays[today]],
+            userData.timeslots
+          );
         }
       } else if (text == "/tomorrow") {
         var date = new Date();
@@ -243,10 +247,60 @@ module.exports = botBuilder(function (message) {
         if (tomorrow == 0) {
           return [
             "No school tomorrow, but this is your schedule on monday:",
-          ].concat(userData.schedule[weekdays[1]]);
+          ].concat(
+            getScheduleWithTimeslots(
+              userData.schedule[weekdays[1]],
+              userData.timeslots
+            )
+          );
+        } else if (userData.schedule[weekdays[tomorrow]].length < 1) {
+          return "You haven‘t defined anything for tomorrow. You can use /config to do so.";
         } else {
-          return userData.schedule[weekdays[tomorrow]];
+          return getScheduleWithTimeslots(
+            userData.schedule[weekdays[tomorrow]],
+            userData.timeslots
+          );
         }
+      } else if (text == "/resetschedule") {
+        userData.state = "resettingschedule";
+        var keyboard = getResetScheduleKeyboard("What do you want to reset?");
+        return saveUserData(userData).then(() => {
+          return keyboard;
+        });
+      } else if (text == "/settimeslots") {
+        userData.state = "settingTimeslots";
+        userData.currentTimeslot = 0;
+        userData.timeslots = [];
+        return saveUserData(userData).then(() => {
+          return (
+            "Alright, let's configure your timeslots." +
+            "\nPlease tell me the time when the you have the first subject (e.g. '8:00-8:45')."
+          );
+        });
+      } else if (userData.state == "settingTimeslots") {
+        if (text == "done") {
+          userData.state = "neutral";
+          delete userData.currentTimeslot;
+          return saveUserData(userData).then(() => {
+            return (
+              "Good, your timeslots are defined:\n" +
+              getNewLineSeperatedList(userData.timeslots)
+            );
+          });
+        } else {
+          // TODO: input validation (can it be converted to a time?)
+          userData.timeslots[userData.currentTimeslot] = text;
+          userData.currentTimeslot++;
+          return saveUserData(userData).then(() => {
+            return (
+              "Good. Enter your " +
+              getOrdinal(userData.currentTimeslot + 1) +
+              " timeslot next or type 'done'."
+            );
+          });
+        }
+      } else if (text == "/timeslots") {
+        return userData.timeslots;
       } else {
         return "Unknown command: " + text;
       }
@@ -316,13 +370,34 @@ module.exports = botBuilder(function (message) {
   function isScheduledWeekday(text) {
     return weekdays.includes(text) && text != "Sunday";
   }
+
+  function getScheduleWithTimeslots(schedule, timeslots) {
+    var scheduleWithTimeslots = [];
+    schedule.forEach((s, index) => {
+      var timeslot = "";
+      if (timeslots[index]) {
+        timeslot = timeslots[index] + ": ";
+      }
+      scheduleWithTimeslots.push(timeslot + s);
+    });
+    return scheduleWithTimeslots;
+  }
+
+  function getOrdinal(number) {
+    switch (number) {
+      case 1:
+        return "1st";
+      case 2:
+        return "2nd";
+      case 3:
+        return "3rd";
+      default:
+        return number + "th";
+    }
+  }
 });
 
 // TODOs:
-// /deleteSubject command that provides a button for each subject and a "Delete all" button.
 // After configuring a day, propose to configure the next day (therefore some shortcuts like /configMonday, /configTuesday etc.)
-// Delete subject
 // Current time related stuff like:
 //    /now -> gives you the current and the next subject
-//    /configTimes -> lets you configure at which time which hours are (e.g. 1st lessons always goes from 8:00 until 8:45)
-//    /today -> gives you all the subjects of today
