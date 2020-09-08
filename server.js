@@ -164,7 +164,7 @@ module.exports = botBuilder(function (message) {
             "All of them!"
           );
         }
-      } else if (text == "/help" || text == "/start") {
+      } else if (text == "/help") {
         return (
           "I will help you managing your schedule." +
           "\n\nCreate a /newsubject and enter details like the name of the subject, your teacher and the room." +
@@ -172,8 +172,9 @@ module.exports = botBuilder(function (message) {
           "\nYou can see the list of all /subjects and delete one or all with /deletesubject." +
           "\n\nAfter having all your subjects defined, /config your schedule." +
           "\nYou can reset one or all days with /resetschedule." +
-          "\n\nDisplay your full /schedule, or use /today or /tomorrow to be more specific." + 
-          "\n\nYou can define the time your lessons start and end with /settimeslots and display all /timeslots."
+          "\n\nDisplay your full /schedule, or use /today or /tomorrow to be more specific." +
+          "\n\nYou can define the time your lessons start and end with /settimeslots and display all /timeslots." +
+          "\n\nUse /start to flush all of your data and start over from scratch."
         );
       } else if (text == "/newsubject") {
         userData.state = "addingSubject";
@@ -269,18 +270,18 @@ module.exports = botBuilder(function (message) {
         });
       } else if (text == "/settimeslots") {
         userData.state = "settingTimeslots";
-        userData.currentTimeslot = 0;
-        userData.timeslots = [];
         return saveUserData(userData).then(() => {
           return (
             "Alright, let's configure your timeslots." +
-            "\nPlease tell me the time when the you have the first subject (e.g. '8:00-8:45')."
+            "\nPlease tell me the start & end of your timeslots in the following format:" +
+            "\n8:00-8:45\n8:50-9:35\n..."
           );
         });
       } else if (userData.state == "settingTimeslots") {
-        if (text == "done") {
+        var timeslots = text.split("\n");
+        if (validateTimeslots(timeslots)) {
           userData.state = "neutral";
-          delete userData.currentTimeslot;
+          userData.timeslots = timeslots;
           return saveUserData(userData).then(() => {
             return (
               "Good, your timeslots are defined:\n" +
@@ -288,21 +289,16 @@ module.exports = botBuilder(function (message) {
             );
           });
         } else {
-          // TODO: input validation (can it be converted to a time?)
-          userData.timeslots[userData.currentTimeslot] = text;
-          userData.currentTimeslot++;
-          return saveUserData(userData).then(() => {
-            return (
-              "Good. Enter your " +
-              getOrdinal(userData.currentTimeslot + 1) +
-              " timeslot next or type 'done'."
-            );
-          });
+          return "This is a wrong format.";
         }
       } else if (text == "/timeslots") {
-        return userData.timeslots;
+        return getNewLineSeperatedList(userData.timeslots);
       } else {
-        return "Unknown command: " + text;
+        return (
+          "Unknown command: " +
+          text +
+          "\n\nUse /help to understand what I am about."
+        );
       }
     });
 
@@ -383,17 +379,18 @@ module.exports = botBuilder(function (message) {
     return scheduleWithTimeslots;
   }
 
-  function getOrdinal(number) {
-    switch (number) {
-      case 1:
-        return "1st";
-      case 2:
-        return "2nd";
-      case 3:
-        return "3rd";
-      default:
-        return number + "th";
-    }
+  function validateTimeslots(timeslots) {
+    var matches = true;
+    timeslots.forEach((timeslot) => {
+      if (
+        timeslot.match(
+          "/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]-([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/"
+        )
+      ) {
+        matches = false;
+      }
+    });
+    return matches;
   }
 });
 
