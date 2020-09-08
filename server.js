@@ -164,6 +164,30 @@ module.exports = botBuilder(function (message) {
             "All of them!"
           );
         }
+      } else if (userData.state == "settingTimezone") {
+        if (!isNaN(text) && parseInt(text) >= -11 && parseInt(text) <= 12) {
+          userData.state = "neutral";
+          userData.timezone = parseInt(text);
+          return saveUserData(userData).then(() => {
+            return "Good, your timezone is set to " + userData.timezone;
+          });
+        } else {
+          return "Please tell me your timezone as a number between -11 and 12";
+        }
+      } else if (userData.state == "settingTimeslots") {
+        var timeslots = text.split("\n");
+        if (validateTimeslots(timeslots)) {
+          userData.state = "neutral";
+          userData.timeslots = timeslots;
+          return saveUserData(userData).then(() => {
+            return (
+              "Good, your timeslots are defined:\n" +
+              getNewLineSeperatedList(userData.timeslots)
+            );
+          });
+        } else {
+          return "This is a wrong format.";
+        }
       } else if (text == "/help") {
         return (
           "I will help you managing your schedule." +
@@ -174,6 +198,7 @@ module.exports = botBuilder(function (message) {
           "\nYou can reset one or all days with /resetschedule." +
           "\n\nDisplay your full /schedule, or use /today or /tomorrow to be more specific." +
           "\n\nYou can define the time your lessons start and end with /settimeslots and display all /timeslots." +
+          "\nConfigure your timezone with /settimezone, in order to use /now to get your current subject." +
           "\n\nUse /start to flush all of your data and start over from scratch."
         );
       } else if (text == "/newsubject") {
@@ -277,22 +302,47 @@ module.exports = botBuilder(function (message) {
             "\n8:00-8:45\n8:50-9:35\n..."
           );
         });
-      } else if (userData.state == "settingTimeslots") {
-        var timeslots = text.split("\n");
-        if (validateTimeslots(timeslots)) {
-          userData.state = "neutral";
-          userData.timeslots = timeslots;
-          return saveUserData(userData).then(() => {
-            return (
-              "Good, your timeslots are defined:\n" +
-              getNewLineSeperatedList(userData.timeslots)
-            );
-          });
-        } else {
-          return "This is a wrong format.";
-        }
       } else if (text == "/timeslots") {
         return getNewLineSeperatedList(userData.timeslots);
+      } else if (text == "/now") {
+        if (!userData.timezone) {
+          return "Please /settimezone first.";
+        } else {
+          var nowSubject = "nothing";
+
+          userData.timeslots.forEach((timeslot, index) => {
+            var start = timeslot.split("-")[0];
+            var timeslotStartDate = new Date();
+            timeslotStartDate.setUTCHours(
+              parseInt(start.split(":")[0]),
+              start.split(":")[1],
+              0
+            );
+
+            var end = timeslot.split("-")[1];
+            var timeslotEndDate = new Date();
+            timeslotEndDate.setUTCHours(
+              parseInt(end.split(":")[0]),
+              end.split(":")[1],
+              0
+            );
+
+            var nowMillis = Date.now() + userData.timezone * 1000 * 60 * 60; // milliseconds to seconds to minutes to hours
+            if (
+              timeslotStartDate.getTime() < nowMillis &&
+              nowMillis < timeslotEndDate.getTime()
+            ) {
+              nowSubject =
+                userData.schedule[weekdays[new Date().getUTCDay()]][index];
+            }
+          });
+          return "Now you have " + nowSubject + ".";
+        }
+      } else if (text == "/settimezone") {
+        userData.state = "settingTimezone";
+        return saveUserData(userData).then(() => {
+          return "In which timezone do you live? (e.g. Berlin = 2 in summer and 1 in winter, New York = -5 etc)";
+        });
       } else {
         return (
           "Unknown command: " +
@@ -395,6 +445,5 @@ module.exports = botBuilder(function (message) {
 });
 
 // TODOs:
+// be more tolerant on "/now", e.g. if it is in the break BEFORE that class, and also display the next class
 // After configuring a day, propose to configure the next day (therefore some shortcuts like /configMonday, /configTuesday etc.)
-// Current time related stuff like:
-//    /now -> gives you the current and the next subject
