@@ -60,9 +60,9 @@ module.exports = botBuilder(function (message) {
         userData.state = "neutral";
         return saveUserData(userData).then(() => {
           return (
-            "Added " +
+            "Added '" +
             text +
-            " to /subjects. Use /newsubject to create another one. After creating all subjects, /config your schedule."
+            "' to /subjects. Use /newsubject to create another one. After creating all subjects, /config your schedule."
           );
         });
       } else if (userData.state == "config") {
@@ -97,12 +97,12 @@ module.exports = botBuilder(function (message) {
             return saveUserData(userData).then(() => {
               return getHideKeyboard(
                 "You configured " +
-                  configCurrentWeekdayHolder +
-                  "\n" +
-                  getNewLineSeperatedList(
-                    userData.schedule[configCurrentWeekdayHolder]
-                  ) +
-                  "\nYou can /config another day now or have a look at your /schedule."
+                configCurrentWeekdayHolder +
+                "\n" +
+                getNewLineSeperatedList(
+                  userData.schedule[configCurrentWeekdayHolder]
+                ) +
+                "\nYou can /config another day now or have a look at your /schedule."
               );
             });
           } else {
@@ -147,7 +147,7 @@ module.exports = botBuilder(function (message) {
           return saveUserData(userData).then(() => {
             return getHideKeyboard(
               text +
-                " deleted. Create a new one with /newsubject, or see all /subjects."
+              " deleted. Create a new one with /newsubject, or see all /subjects."
             );
           });
         } else if (text == "All of them!") {
@@ -170,7 +170,7 @@ module.exports = botBuilder(function (message) {
           userData.state = "neutral";
           userData.timezone = parseInt(text);
           return saveUserData(userData).then(() => {
-            return "Good, your timezone is set to " + userData.timezone;
+            return "Good, your timezone is set to " + userData.timezone + ".";
           });
         } else {
           return "Please tell me your timezone as a number between -11 and 12.";
@@ -200,12 +200,14 @@ module.exports = botBuilder(function (message) {
           "\n\nDisplay your full /schedule, or use /today or /tomorrow to be more specific." +
           "\n\nYou can define the time your lessons start and end with /settimeslots and display all /timeslots." +
           "\nConfigure your timezone with /settimezone, in order to use /now to get your current subject." +
-          "\n\nUse /start to flush all of your data and start over from scratch."
+          "\n\nUse /start to flush all of your data and start over from scratch." +
+          "\n\nI'm gracefully accepting a /tip if you like my bot."
         );
       } else if (text == "/newsubject") {
         userData.state = "addingSubject";
         return saveUserData(userData).then(() => {
-          return "Which subject do you want to create?\nAdd details like the room or the teacher here, but not the time or day.";
+          return "Which subject do you want to create?\nAdd details like the room or the teacher here, but not the time or day." +
+            " If you have one subject alternating in two rooms, create two seperate subjects, one for each.";
         });
       } else if (text == "/subjects") {
         if (userData.subjects.length == 0) {
@@ -236,17 +238,17 @@ module.exports = botBuilder(function (message) {
       } else if (text == "/schedule") {
         return (
           "Monday:\n" +
-          getNewLineSeperatedList(userData.schedule.Monday) +
+          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Monday)) +
           "\nTuesday:\n" +
-          getNewLineSeperatedList(userData.schedule.Tuesday) +
+          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Tuesday)) +
           "\nWednesday:\n" +
-          getNewLineSeperatedList(userData.schedule.Wednesday) +
+          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Wednesday)) +
           "\nThursday:\n" +
-          getNewLineSeperatedList(userData.schedule.Thursday) +
+          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Thursday)) +
           "\nFriday:\n" +
-          getNewLineSeperatedList(userData.schedule.Friday) +
+          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Friday)) +
           "\nSaturday:\n" +
-          getNewLineSeperatedList(userData.schedule.Saturday)
+          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Saturday))
         );
       } else if (text == "/today") {
         var date = new Date();
@@ -353,6 +355,13 @@ module.exports = botBuilder(function (message) {
             ).get(),
           ];
         });
+      } else if (text == "/tip") {
+        return {
+          chat_id: id,
+          parse_mode: "HTML",
+          text: "Please use <a href=\"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EZWKKXVTDSEAL&source=url\">this Paypal link</a>" +
+            " to tip me a coffee.\nThanks a lot!"
+        }
       } else {
         return (
           "Unknown command: " +
@@ -451,6 +460,14 @@ module.exports = botBuilder(function (message) {
       }
     });
     return matches;
+  }
+
+  function prefixWithOrdinals(list) {
+    var prefixedWithOrdinals = [];
+    list.forEach((entry, index) => {
+      prefixedWithOrdinals.push((index + 1) + ". " + entry);
+    })
+    return prefixedWithOrdinals;
   }
 });
 
