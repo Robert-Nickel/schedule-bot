@@ -1,6 +1,7 @@
 "use strict";
 
 const botBuilder = require("claudia-bot-builder");
+const telegramTemplate = botBuilder.telegramTemplate;
 const AWS = require("aws-sdk");
 
 module.exports = botBuilder(function (message) {
@@ -172,7 +173,7 @@ module.exports = botBuilder(function (message) {
             return "Good, your timezone is set to " + userData.timezone;
           });
         } else {
-          return "Please tell me your timezone as a number between -11 and 12";
+          return "Please tell me your timezone as a number between -11 and 12.";
         }
       } else if (userData.state == "settingTimeslots") {
         var timeslots = text.split("\n");
@@ -308,7 +309,7 @@ module.exports = botBuilder(function (message) {
         if (!userData.timezone) {
           return "Please /settimezone first.";
         } else {
-          var nowSubject = "nothing";
+          var nowSubject;
 
           userData.timeslots.forEach((timeslot, index) => {
             var start = timeslot.split("-")[0];
@@ -336,12 +337,21 @@ module.exports = botBuilder(function (message) {
                 userData.schedule[weekdays[new Date().getUTCDay()]][index];
             }
           });
-          return "Now you have " + nowSubject + ".";
+          if (nowSubject) {
+            return "You have " + nowSubject + " now.";
+          } else {
+            return "You currently have nothing. Take a break.";
+          }
         }
       } else if (text == "/settimezone") {
         userData.state = "settingTimezone";
         return saveUserData(userData).then(() => {
-          return "In which timezone do you live? (e.g. Berlin = 2 in summer and 1 in winter, New York = -5 etc)";
+          return [
+            "In which timezone do you live? (e.g. Berlin = 2 in summer and 1 in winter, New York = -5 etc)",
+            new telegramTemplate.Photo(
+              "http://www.fungeo.de/images/Zeitzonen/all_e.png"
+            ).get(),
+          ];
         });
       } else {
         return (
