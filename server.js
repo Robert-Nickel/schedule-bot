@@ -359,8 +359,7 @@ module.exports = botBuilder(function (message) {
         return {
           chat_id: id,
           parse_mode: "HTML",
-          text: "Please use <a href=\"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=EZWKKXVTDSEAL&source=url\">this Paypal link</a>" +
-            " to tip me a coffee.\nThanks a lot!"
+          text: "Thanks a lot for <a href=\"https://ko-fi.com/robertnickel\">buying me a coffee</a>!"
         }
       } else {
         return (
