@@ -40,7 +40,11 @@ module.exports = botBuilder(function (message) {
       })
       .promise()
       .then(function () {
-        return "Welcome, I am a schedule bot. To show you my features, select /help.";
+        return "Welcome, I am your Schedule Secretary. Please follow this 3 simple steps to configure your schedule:" +
+        "\n\n 1. Tell me which subjects you have by selecting /newsubject." +
+        "\n 2. Configure your schedule with those subjects by selecting /config" +
+        "\n 3. Look at your /schedule." +
+        "\n\nIf you are in trouble or want to know, what else I can do for you, select /help.";
       });
   }
   return documentClient
