@@ -205,7 +205,8 @@ module.exports = botBuilder(function (message) {
           "\n\nYou can define the time your lessons start and end with /settimeslots and display all /timeslots." +
           "\nConfigure your timezone with /settimezone, in order to use /now to get your current subject." +
           "\n\nUse /start to flush all of your data and start over from scratch." +
-          "\n\nI'm gracefully accepting a /tip if you like my bot."
+          "\n\nFor feedback and bug reporting contant @RobertNickel." +
+          "\nIf you enjoy the bot please /tip me a coffee."
         );
       } else if (text == "/newsubject") {
         userData.state = "addingSubject";
