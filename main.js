@@ -206,7 +206,7 @@ module.exports = botBuilder(function (message) {
           "\nConfigure your timezone with /settimezone, in order to use /now to get your current subject." +
           "\n\nUse /start to flush all of your data and start over from scratch." +
           "\n\nFor feedback and bug reporting contant @RobertNickel." +
-          "\nIf you enjoy the bot please /tip me a coffee."
+          "\nIf you enjoy the bot please /tip me a coffee. It's easy!"
         );
       } else if (text == "/newsubject") {
         userData.state = "addingSubject";

@@ -1,11 +1,11 @@
 {
   "lambda": {
-    "role": "mgw_stundenplan_bot-executor",
-    "name": "mgw_stundenplan_bot",
+    "role": "schedule-bot-main-executor",
+    "name": "schedule-bot-main",
     "region": "eu-central-1"
   },
   "api": {
-    "id": "8f5vlt46d0",
-    "module": "server"
+    "id": "y7o5qghupk",
+    "module": "main"
   }
 }
