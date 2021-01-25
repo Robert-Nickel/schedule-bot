@@ -41,10 +41,10 @@ module.exports = botBuilder(function (message) {
       .promise()
       .then(function () {
         return "Welcome, I am your Schedule Secretary. Please follow this 3 simple steps to configure your schedule:" +
-        "\n\n 1. Tell me which subjects you have by selecting /newsubject." +
-        "\n 2. Configure your schedule with those subjects by selecting /config" +
-        "\n 3. Look at your /schedule." +
-        "\n\nIf you are in trouble or want to know, what else I can do for you, select /help.";
+          "\n\n 1. Tell me which subjects you have by selecting /newsubject." +
+          "\n 2. Configure your schedule with those subjects by selecting /config" +
+          "\n 3. Look at your /schedule." +
+          "\n\nIf you are in trouble or want to know, what else I can do for you, select /help.";
       });
   }
   return documentClient
@@ -60,15 +60,22 @@ module.exports = botBuilder(function (message) {
       const text = message.text;
 
       if (userData.state == "addingSubject") {
-        userData.subjects.push(text);
-        userData.state = "neutral";
-        return saveUserData(userData).then(() => {
-          return (
-            "Added '" +
-            text +
-            "' to /subjects. Use /newsubject to create another one. After creating all subjects, /config your schedule."
-          );
-        });
+        if (userData.subjects.length < 21) {
+          userData.subjects.push(text);
+          userData.state = "neutral";
+          return saveUserData(userData).then(() => {
+            return (
+              "Added '" +
+              text +
+              "' to /subjects. Use /newsubject to create another one. After creating all subjects, /config your schedule."
+            );
+          });
+        } else {
+          userData.state = "neutral";
+          return saveUserData(userData).then(() => {
+            return "You cannot have more than 20 subjects. Use /deletesubject to do that." 
+          });
+        }
       } else if (userData.state == "config") {
         if (!userData.configCurrentWeekday) {
           if (isScheduledWeekday(text)) {
@@ -205,8 +212,8 @@ module.exports = botBuilder(function (message) {
           "\n\nYou can define the time your lessons start and end with /settimeslots and display all /timeslots." +
           "\nConfigure your timezone with /settimezone, in order to use /now to get your current subject." +
           "\n\nUse /start to flush all of your data and start over from scratch." +
-          "\n\nFor feedback and bug reporting contant @RobertNickel." +
-          "\nIf you enjoy the bot please /tip me a coffee. It's easy!"
+          "\n\nFor feedback and bug reporting contact @RobertNickel." +
+          "\nIf you enjoy the bot, please /tip me a coffee. It's easy!"
         );
       } else if (text == "/newsubject") {
         userData.state = "addingSubject";
