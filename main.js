@@ -16,7 +16,7 @@ module.exports = botBuilder(function (message) {
     "Wednesday",
     "Thursday",
     "Friday",
-    "Saturday",
+    "Saturday"
   ];
 
   if (message.text == "/start") {
@@ -34,6 +34,7 @@ module.exports = botBuilder(function (message) {
             Thursday: [],
             Friday: [],
             Saturday: [],
+            Sunday: []
           },
           timeslots: [],
         },
@@ -73,7 +74,7 @@ module.exports = botBuilder(function (message) {
         } else {
           userData.state = "neutral";
           return saveUserData(userData).then(() => {
-            return "You cannot have more than 20 subjects. Use /deletesubject to do that." 
+            return "You cannot have more than 20 subjects. Use /deletesubject to do that."
           });
         }
       } else if (userData.state == "config") {
@@ -132,6 +133,7 @@ module.exports = botBuilder(function (message) {
           userData.schedule.Thursday = [];
           userData.schedule.Friday = [];
           userData.schedule.Saturday = [];
+          userData.schedule.Sunday = [];
           userData.state = "neutral";
           return saveUserData(userData).then(() => {
             return getHideKeyboard(
@@ -248,8 +250,7 @@ module.exports = botBuilder(function (message) {
           return getWeekdayKeyboard();
         });
       } else if (text == "/schedule") {
-        return (
-          "Monday:\n" +
+        var schedule = "Monday:\n" +
           getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Monday)) +
           "\nTuesday:\n" +
           getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Tuesday)) +
@@ -260,21 +261,17 @@ module.exports = botBuilder(function (message) {
           "\nFriday:\n" +
           getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Friday)) +
           "\nSaturday:\n" +
-          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Saturday))
-        );
+          getNewLineSeperatedList(prefixWithOrdinals(userData.schedule.Saturday));
+        let sunday = userData.schedule.Sunday
+        if (sunday) {
+          schedule = schedule + "\nSunday:\n" +
+            getNewLineSeperatedList(prefixWithOrdinals(sunday))
+        }
+        return ("Your timeslots:\n"+getNewLineSeperatedList(userData.timeslots) + "\n" + schedule);
       } else if (text == "/today") {
         var date = new Date();
         var today = date.getDay();
-        if (today == 0) {
-          return [
-            "Good news: It's sunday, but this is the schedule for tomorrow:",
-          ].concat(
-            getScheduleWithTimeslots(
-              userData.schedule[weekdays[1]],
-              userData.timeslots
-            )
-          );
-        } else if (userData.schedule[weekdays[today]].length < 1) {
+        if (userData.schedule[weekdays[today]].length < 1) {
           return "You haven‘t defined anything for today. You can use /config to do so.";
         } else {
           return getScheduleWithTimeslots(
@@ -412,6 +409,7 @@ module.exports = botBuilder(function (message) {
           ["Monday", "Tuesday"],
           ["Wednesday", "Thursday"],
           ["Friday", "Saturday"],
+          ["Sunday"]
         ],
         resize_keyboard: true,
       },
@@ -444,7 +442,7 @@ module.exports = botBuilder(function (message) {
   }
 
   function isScheduledWeekday(text) {
-    return weekdays.includes(text) && text != "Sunday";
+    return weekdays.includes(text);
   }
 
   function getScheduleWithTimeslots(schedule, timeslots) {
