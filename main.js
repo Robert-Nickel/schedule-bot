@@ -267,7 +267,7 @@ module.exports = botBuilder(function (message) {
           schedule = schedule + "\nSunday:\n" +
             getNewLineSeperatedList(prefixWithOrdinals(sunday))
         }
-        return ("Your timeslots:\n"+getNewLineSeperatedList(userData.timeslots) + "\n" + schedule);
+        return ("Your timeslots:\n" + getNewLineSeperatedList(userData.timeslots) + "\n" + schedule);
       } else if (text == "/today") {
         var date = new Date();
         var today = date.getDay();
