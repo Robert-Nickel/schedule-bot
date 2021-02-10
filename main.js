@@ -179,9 +179,10 @@ module.exports = botBuilder(function (message) {
           );
         }
       } else if (userData.state == "settingTimezone") {
-        if (!isNaN(text) && parseInt(text) >= -11 && parseInt(text) <= 12) {
+        let floatText = parseFloat(text)
+        if (!isNaN(floatText) && floatText >= -11 && floatText <= 12) {
           userData.state = "neutral";
-          userData.timezone = parseInt(text);
+          userData.timezone = Math.round(floatText * 10) / 10;
           return saveUserData(userData).then(() => {
             return "Good, your timezone is set to " + userData.timezone + ".";
           });
@@ -200,7 +201,8 @@ module.exports = botBuilder(function (message) {
             );
           });
         } else {
-          return "This is a wrong format.";
+          return "This is a wrong format.\n\nPlease tell me the start & end of your timeslots in the following format:" +
+            "\n8:00-8:45\n8:50-9:35\n...";
         }
       } else if (text == "/help") {
         return (
@@ -358,7 +360,7 @@ module.exports = botBuilder(function (message) {
         userData.state = "settingTimezone";
         return saveUserData(userData).then(() => {
           return [
-            "In which timezone do you live? (e.g. Berlin = 2 in summer and 1 in winter, New York = -5 etc)",
+            "In which timezone do you live? (Berlin = 2 in summer and 1 in winter, New York = -5, India 5.5 etc)",
             new telegramTemplate.Photo(
               "http://www.fungeo.de/images/Zeitzonen/all_e.png"
             ).get(),
@@ -460,9 +462,10 @@ module.exports = botBuilder(function (message) {
   function validateTimeslots(timeslots) {
     var matches = true;
     timeslots.forEach((timeslot) => {
+      console.log('timeslot' + timeslot)
       if (
-        timeslot.match(
-          "/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]-([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/"
+        !timeslot.match(
+          "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
         )
       ) {
         matches = false;
