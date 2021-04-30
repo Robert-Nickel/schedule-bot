@@ -217,6 +217,8 @@ module.exports = botBuilder(function (message) {
           "\nConfigure your timezone with /settimezone, in order to use /now to get your current subject." +
           "\n\nUse /start to flush all of your data and start over from scratch." +
           "\n\nFor feedback and bug reporting contact @RobertNickel." +
+          "\n\nYour data is yours! Read /dataprotection for details." +
+          "\n\nIf you want all of your data deleted, send /forgetme." +
           "\nIf you enjoy the bot, please /tip me a coffee. It's easy!"
         );
       } else if (text == "/newsubject") {
@@ -269,7 +271,7 @@ module.exports = botBuilder(function (message) {
           schedule = schedule + "\nSunday:\n" +
             getNewLineSeperatedList(prefixWithOrdinals(sunday))
         }
-        return ("Your timeslots:\n" + getNewLineSeperatedList(userData.timeslots) + "\n" + schedule);
+        return ("Timeslots:\n" + getNewLineSeperatedList(userData.timeslots) + "\n" + schedule);
       } else if (text == "/today") {
         var date = new Date();
         var today = date.getDay();
@@ -372,7 +374,30 @@ module.exports = botBuilder(function (message) {
           parse_mode: "HTML",
           text: "Thanks a lot for <a href=\"https://ko-fi.com/robertnickel\">buying me a coffee</a>!"
         }
-      } else {
+      } else if (text == "/dataprotection") {
+        return "Good you asked!\n\n" +
+          "By using this bot you are producing data. " +
+          "This data needs to be persisted in order for the Schedule Secretary to function.\n\n" +
+          "The data contains a unique user id provided by Telegram (not your username) and the data you enter: " +
+          "Your subjects, timeslots, schedule, timezone, and the current state of your functional process.\n\n" +
+          "If you want the Schedule Secretary to forget you ever existed, send /forgetme."
+      } else if (text == "/forgetme") {
+        return documentClient
+          .delete({
+            TableName: "Users",
+            Key: {
+              "id": userData.id
+            }
+          })
+          .promise()
+          .then(function () {
+            return [new telegramTemplate.Photo(
+              "https://i.dailymail.co.uk/i/pix/2011/12/12/article-0-0F26BF7400000578-39_634x368.jpg"
+            ).get(),
+              "We just forgot everything about you.\n\n /start again?"]
+          });
+      }
+      else {
         return (
           "Unknown command: " +
           text +
